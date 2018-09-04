@@ -8,7 +8,12 @@ actual_version="$(shell docker run --rm $(docker_name):$(app_version) --version)
 docker_name := fbartels/$(app_name)
 #$(app_version)
 
+docker_login=`cat ~/.docker-account-user`
+docker_pwd=`cat ~/.docker-account-pwd`
+
 all: update test run
+
+release: all tag publish
 
 update:
 	@echo "Checking if Dockerfile needs updating"
@@ -20,7 +25,7 @@ update:
 	fi
 build:
 	@echo "Building Docker image"
-	docker build -t $(docker_name):$(app_version) .
+	docker build -t $(app_name) .
 
 test: build
 	@echo "Checking version in Docker image"
@@ -33,4 +38,29 @@ run:
 	# setting custom server: bw config server https://bitwarden.domain.com
 	docker run -it --rm \
 	-v $(HOME)/.config/bitwarden:"/root/.config/Bitwarden CLI" \
-	$(docker_name):$(app_version) --help
+	$(app_name) --help
+
+repo-login:
+	docker login -u $(docker_login) -p $(docker_pwd)
+
+# Docker tagging
+tag: tag-latest tag-version
+
+tag-latest:
+	@echo 'create tag latest'
+	docker tag $(app_name) $(docker_name):latest
+
+tag-version:
+	@echo 'create tag $(app_version)'
+	docker tag $(app_name) $(docker_name):$(app_version)
+
+# Docker publish
+publish: repo-login publish-latest publish-version
+
+publish-latest: tag-latest
+	@echo 'publish latest to $(docker_name)'
+	docker push $(docker_name):latest
+
+publish-version: tag-version
+	@echo 'publish $(app_version) to $(docker_name)'
+	docker push $(docker_name):$(app_version)
