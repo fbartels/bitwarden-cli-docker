@@ -1,8 +1,7 @@
 #SHELL = /bin/bash
 
 app_name := bitwarden-cli-docker
-app_version := 1.0.0
-#$(shell npm view @bitwarden/cli "dist-tags".latest)
+app_version := $(shell npm view @bitwarden/cli "dist-tags".latest)
 dockerfile_version="$(shell grep -oP '(?<=bitwarden/cli@)[0-9.]+' Dockerfile)"
 actual_version="$(shell docker run --rm $(app_name):$(app_version) --version)"
 
@@ -19,7 +18,7 @@ release: all tag publish
 update:
 	@echo "Checking if Dockerfile needs updating"
 	if [ "${app_version}" != "${dockerfile_version}" ]; then \
-		sed -i "s|\(install -g @bitwarden/cli@\)[0-9\.]\+$|\1${app_version}|" Dockerfile; \
+		sed -i "s|^RUN npm.*|RUN npm install -g @bitwarden/cli@${app_version}|" Dockerfile; \
 		git add Dockerfile; \
 		git commit -m "ci: bump to ${app_version}"; \
 		git push origin master; \
