@@ -1,9 +1,10 @@
 #SHELL = /bin/bash
 
 app_name := bitwarden-cli-docker
-app_version := $(shell npm view @bitwarden/cli "dist-tags".latest)
+app_version := 1.0.0
+#$(shell npm view @bitwarden/cli "dist-tags".latest)
 dockerfile_version="$(shell grep -oP '(?<=bitwarden/cli@)[0-9.]+' Dockerfile)"
-actual_version="$(shell docker run --rm $(docker_name):$(app_version) --version)"
+actual_version="$(shell docker run --rm $(app_name):$(app_version) --version)"
 
 docker_name := fbartels/$(app_name)
 #$(app_version)
@@ -25,7 +26,7 @@ update:
 	fi
 build:
 	@echo "Building Docker image"
-	docker build -t $(app_name) .
+	docker build -t $(app_name):${app_version} .
 
 test: build
 	@echo "Checking version in Docker image"
@@ -38,7 +39,8 @@ run:
 	# setting custom server: bw config server https://bitwarden.domain.com
 	docker run -it --rm \
 	-v $(HOME)/.config/bitwarden:"/root/.config/Bitwarden CLI" \
-	$(app_name) --help
+	$(app_name):${app_version} --help
+	echo ${actual_version} > $(HOME)/.config/bitwarden/version
 
 repo-login:
 	docker login -u $(docker_login) -p $(docker_pwd)
